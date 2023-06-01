@@ -1,0 +1,29 @@
+---
+title: "Regression Analysis: Amsterdam Price"
+author: "Parnika Singh"
+date: "12/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+df <- read.csv("listings_details_merge.csv")
+str(df)
+df$price <- na.omit(df$price)
+df$price <- as.integer(df$price)
+df$property_type <- as.factor(df$property_type)
+df$room_type <- as.factor(df$room_type)
+df$neighbourhood_cleansed <- as.factor(df$neighbourhood_cleansed)
+df$tt <- df$neighbourhood_cleansed
+df$host_response_time <- as.factor(df$host_response_time)
+df$host_identity_verified <- as.factor(df$host_identity_verified)
+df$host_is_superhost <- as.factor(df$host_is_superhost)
+df$cancellation_policy <- as.factor(df$cancellation_policy)
+result <- lm(price ~ accommodates + availability_365 + review_scores_rating + bathrooms + bedrooms + beds + room_type + tt + host_identity_verified +cancellation_policy, data = df)
+summary(result)
+```
+
+

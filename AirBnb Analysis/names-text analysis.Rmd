@@ -1,0 +1,262 @@
+---
+title: "project-602"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library(quanteda)
+
+```
+
+#read data
+
+```{r load Data}
+# Load up the .CSV data and explore it.
+listings_details <- read.csv("C:/Users/ramne/Documents/Fall 2021/MGTA 602 - Data Communication/Project/Dataset/listings_details.csv")
+                        
+head(listings_details)
+```
+
+
+
+```{r}
+colnames(listings_details)
+```
+
+
+
+
+```{r}
+names <- listings_details[c("id" ,"summary")]
+head(names)
+```
+
+
+```{r}
+
+rownames(names) <- names$id
+names <- names[-1]
+head(names)
+```
+
+
+
+
+
+```{r}
+
+
+names_tokens <- tokens(names$summary, what = "word",remove_numbers = TRUE, remove_punct = TRUE, #remove numbers and punctuation
+                       remove_symbols = TRUE, split_hyphens = TRUE) # remove symbols and hyphens
+
+names_tokens <- tokens_tolower(names_tokens) #convert all tokens to lowercase
+names_tokens <- tokens_select(names_tokens, stopwords(), 
+                              selection = "remove") #remove stopwords)
+```
+
+
+#Create a Document Frequency matrix using dfm
+```{r}
+names.dfm <- dfm(names_tokens)
+
+head(names.dfm)
+```
+
+
+
+
+#Top 10 features
+```{r}
+top10 <- topfeatures(names.dfm,20)
+top10_df <- data.frame(top10)
+top10_df
+barplot(top10,col = rainbow(25) )
+
+```
+
+
+
+
+
+#Create TD-IDF
+```{r}
+
+dfm2 <-  dfm_tfidf(names.dfm)
+head(dfm2)
+```
+
+
+
+
+#Again get top features
+```{r}
+top10 <- topfeatures(dfm2,20)
+top10_df <- data.frame(top10)
+top10_df
+barplot(top10,col = rainbow(25) )
+```
+
+#Word Cloud
+```{r}
+
+library(quanteda.textplots)
+textplot_wordcloud(dfm2, min_count = 50,
+random_order = FALSE, rotation = 0.25,
+    color = RColorBrewer::brewer.pal(8, "Dark2"))
+```
+
+
+#N-gram analysis
+
+#Bi-grams
+```{r}
+tokens3 <- tokens_ngrams(names_tokens, n = 2)
+dfm_new <- dfm(tokens3)
+dfm3 <- dfm_tfidf(dfm_new)
+#head(dfm3)
+data.frame(topfeatures(dfm3,20))
+barplot(topfeatures(dfm3,20),col = rainbow(25) )
+```
+#Word Cloud
+```{r}
+
+library(quanteda.textplots)
+textplot_wordcloud(dfm3, min_count = 50,
+random_order = FALSE, rotation = 0.25,
+    color = RColorBrewer::brewer.pal(8, "Dark2"))
+```
+
+
+```{r}
+df_2grams <- data.frame(dfm2)
+head(df_2grams)
+
+```
+
+
+
+#3-grams
+```{r}
+tokens4 <- tokens_ngrams(names_tokens, n = 3)
+dfm_new4 <- dfm(tokens4)
+dfm4 <- dfm_tfidf(dfm_new4)
+#head(dfm4)
+data.frame(topfeatures(dfm4,20))
+barplot(topfeatures(dfm4,20),col = rainbow(25) )
+```
+
+
+#Word Cloud
+```{r}
+
+library(quanteda.textplots)
+textplot_wordcloud(dfm4, min_count = 50,
+random_order = FALSE, rotation = 0.25,
+    color = RColorBrewer::brewer.pal(8, "Dark2"))
+```
+
+
+```{r}
+library(tidyverse)
+library(tidytext) 
+library(syuzhet)
+
+text_data <- iconv(names$name)
+
+bing_vector <- get_sentiment(text_data, method="bing")
+bing_vector
+summary(bing_vector)
+
+ap_td <- tidy(names.dfm)
+
+bing_word_counts <- ap_td %>%
+  inner_join(get_sentiments("bing"), by = c(term = "word")) %>%
+  count(term, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  slice_max(n, n = 20) %>% 
+  ungroup() %>%
+  mutate(term = reorder(term, n)) %>%
+  ggplot(aes(n, term, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(x = "Contribution to sentiment",
+       y = NULL)
+
+```
+
+
+
+```{r}
+names.df <- data.frame(names.dfm)
+head(names.df)
+```
+
+
+
+```{r}
+#df_new <- cbind(names.df,listings_details)
+#head(df_new)
+```
+
+```{r}
+#write.csv(df_new, "merged.csv")
+```
+
+
+```{r}
+names.df$price <- listings_details$price
+summary(names.df$price)
+```
+
+```{r}
+
+names.df$price <- as.numeric(gsub('[$,]', '', names.df$price))
+summary(names.df$price)
+```
+
+```{r}
+names_2.df <- names.df[colSums(names.df[,-1]) > 2]
+
+
+```
+
+
+```{r}
+names_2.df[colSums(names_2.df[,-1]) < 2]
+```
+
+
+```{r}
+column_sums <- colSums(names.df[,-1])
+```
+
+```{r}
+df_col_sum <- data.frame(column_sums)
+head(df_col_sum)
+```
+
+
+```{r}
+df_col_sum$word <- rownames(df_col_sum)
+
+data.frame(df_col_sum[order(-df_col_sum$column_sums),])
+```
+
+```{r}
+df_col_sum[df_col_sum$column_sums < 2,]
+```
+
+
+
+```{r}
+write.csv(names.df,'words.csv')
+```

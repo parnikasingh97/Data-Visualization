@@ -1,0 +1,154 @@
+---
+title: "602-project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r}
+library(quanteda)
+
+```
+
+#read data
+
+```{r load Data}
+# Load up the .CSV data and explore it.
+reviews_details <- read.csv("C:/Users/ramne/Documents/Fall 2021/MGTA 602 - Data Communication/Project/Dataset/reviews_details.csv")
+                        
+head(reviews_details)
+```
+
+
+```{r load Data}
+# Load up the .CSV data and explore it.
+listings_details <- read.csv("C:/Users/ramne/Documents/Fall 2021/MGTA 602 - Data Communication/Project/Dataset/listings_details.csv")
+                        
+head(listings_details)
+```
+
+
+
+```{r}
+colnames(reviews_details)
+```
+
+
+
+```{r}
+comments <- reviews_details[c("id" ,"comments" )]
+head(comments)
+```
+
+
+```{r}
+
+rownames(comments) <- comments$id
+comments <- comments[-1]
+head(comments)
+```
+
+
+
+```{r}
+
+
+comments_tokens <- tokens(comments$comments, what = "word",remove_numbers = TRUE, remove_punct = TRUE, #remove numbers and punctuation
+                       remove_symbols = TRUE, split_hyphens = TRUE) # remove symbols and hyphens
+
+comments_tokens <- tokens_tolower(comments_tokens) #convert all tokens to lowercase
+comments_tokens <- tokens_select(comments_tokens, stopwords(), 
+                              selection = "remove") #remove stopwords)
+
+comments_tokens <- tokens_wordstem(comments_tokens, language = "english") #stemming to get the root
+```
+
+
+
+#Create a Document Frequency matrix using dfm
+```{r}
+comments.dfm <- dfm(comments_tokens)
+
+head(comments.dfm)
+```
+
+
+
+#Top 10 features
+```{r}
+top10 <- topfeatures(comments.dfm,10)
+top10_df <- data.frame(top10)
+top10_df
+barplot(top10,col = rainbow(25) )
+
+```
+
+
+
+#Create TD-IDF
+```{r}
+
+dfm2 <-  dfm_tfidf(comments.dfm)
+head(dfm2)
+```
+
+
+
+#Again get top features
+```{r}
+top10 <- topfeatures(dfm2,10)
+top10_df <- data.frame(top10)
+top10_df
+barplot(top10,col = rainbow(25) )
+```
+
+
+
+```{r}
+library(tidyverse)
+library(tidytext) 
+library(syuzhet)
+
+text_data <- iconv(comments$comments)
+
+bing_vector <- get_sentiment(text_data, method="bing")
+bing_vector
+summary(bing_vector)
+
+
+```
+
+```{r}
+comments$sentiment_score <- bing_vector
+```
+
+```{r}
+comments$listing_id <- reviews_details$listing_id
+```
+
+
+```{r}
+sentiments <- comments[c("listing_id","sentiment_score")]
+head(sentiments)
+```
+
+
+```{r}
+#write.csv(sentiments,'sentiments.csv')
+```
+
+
+# filter out reviews with negative sentiments
+
+```{r}
+comments[comments$sentiment_score < - 10,]
+```
+
+
+
+
